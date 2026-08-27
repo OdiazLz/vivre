@@ -1,4 +1,4 @@
-import { lazy, useState, useEffect, useRef } from "react";
+import { lazy, Suspense, useState, useEffect, useRef } from "react";
 import toast from 'react-hot-toast';
 import {
   Users,
@@ -49,6 +49,27 @@ const PURPLE = "#7c3aed";
 const GREEN = "#10b981";
 const NAVY = "#162033";
 const API_URL = API_BASE_URL;
+
+function ModuleLoading() {
+  return (
+    <div className="animate-pulse space-y-6" role="status" aria-live="polite" aria-label="Cargando módulo">
+      <div className="flex items-center justify-between gap-4">
+        <div className="space-y-2">
+          <div className="h-6 w-44 rounded-lg bg-slate-200" />
+          <div className="h-3 w-64 max-w-full rounded bg-slate-100" />
+        </div>
+        <div className="h-10 w-32 rounded-xl bg-slate-200" />
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div key={index} className="h-28 rounded-2xl border border-slate-100 bg-white shadow-sm" />
+        ))}
+      </div>
+      <div className="h-80 rounded-2xl border border-slate-100 bg-white shadow-sm" />
+      <span className="sr-only">Cargando módulo…</span>
+    </div>
+  );
+}
 
 
 function Avatar({ name, size = 32 }: { name: string; size?: number }) {
@@ -398,6 +419,7 @@ export default function App() {
 
         {/* Scrollable content */}
         <main className="min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-contain p-4 sm:p-6">
+          <Suspense fallback={<ModuleLoading />}>
           {activeNav === 'comprobantes' ? (
             <ComprobantesPage
               pagos={pagos}
@@ -672,6 +694,7 @@ export default function App() {
           </div>
             </>
           )}
+          </Suspense>
         </main>
       </div>
 

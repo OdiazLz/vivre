@@ -183,7 +183,7 @@ export default function ConfiguracionPage() {
       </div>
 
       {/* Config Sections */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(280px,0.7fr)_minmax(0,1.3fr)]">
         {/* Información General */}
         <div className="bg-card rounded-2xl border p-6" style={{ borderColor: "#e5e7eb", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
           <div className="flex items-center gap-2 mb-4">

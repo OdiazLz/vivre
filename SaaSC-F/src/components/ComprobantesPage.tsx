@@ -54,28 +54,28 @@ export default function ComprobantesPage({ pagos, onSelectPago, onRefresh, isFet
   };
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 max-w-full space-y-5 sm:space-y-6">
       {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground" style={{ fontFamily: "Plus Jakarta Sans, sans-serif" }}>
+      <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-xl font-bold text-foreground sm:text-2xl" style={{ fontFamily: "Plus Jakarta Sans, sans-serif" }}>
             Comprobantes de Pago
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             Gestiona y revisa todos los comprobantes de pago
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          {canRegisterCash && <button disabled={cashLoading} onClick={()=>void openCash()} className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-60"><Banknote size={16}/>{cashLoading?'Cargando…':'Registrar efectivo'}</button>}
+        <div className="grid w-full min-w-0 grid-cols-2 gap-2 sm:w-auto sm:flex sm:flex-wrap sm:items-center sm:justify-end sm:gap-3">
+          {canRegisterCash && <button disabled={cashLoading} onClick={()=>void openCash()} className="col-span-2 flex min-w-0 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-60 sm:col-span-1 sm:px-4 sm:py-2"><Banknote size={16} className="shrink-0"/><span>{cashLoading?'Cargando…':'Registrar efectivo'}</span></button>}
           <button
             onClick={onRefresh}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
+            className="flex min-w-0 items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold text-white transition-all hover:opacity-90 sm:px-4 sm:py-2"
             style={{ background: 'linear-gradient(135deg, #4f6ef7, #4338ca)' }}
           >
             <Eye size={16} className={isFetching ? 'animate-spin' : ''} />
             Actualizar
           </button>
-          <button className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border border-border hover:bg-muted transition-all">
+          <button className="flex min-w-0 items-center justify-center gap-2 rounded-xl border border-border px-3 py-2.5 text-sm font-semibold transition-all hover:bg-muted sm:px-4 sm:py-2">
             <Download size={16} />
             Exportar
           </button>
@@ -83,7 +83,7 @@ export default function ComprobantesPage({ pagos, onSelectPago, onRefresh, isFet
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
         <div className="bg-card rounded-xl border p-4">
           <p className="text-xs text-muted-foreground">Total</p>
           <p className="text-2xl font-bold text-foreground mt-1">{pagos.length}</p>
@@ -103,11 +103,11 @@ export default function ComprobantesPage({ pagos, onSelectPago, onRefresh, isFet
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-3">
+      <div className="flex min-w-0 items-center gap-3">
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-          className="bg-muted text-sm px-4 py-2.5 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-blue-500/20"
+          className="w-full min-w-0 rounded-xl border border-gray-200 bg-muted px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 sm:w-auto"
           aria-label="Filtrar comprobantes por estatus"
         >
           <option value="TODOS">Todos los estatus</option>
@@ -118,8 +118,8 @@ export default function ComprobantesPage({ pagos, onSelectPago, onRefresh, isFet
       </div>
 
       {/* Table */}
-      <div className="bg-card rounded-2xl border overflow-hidden">
-        <div className="overflow-x-auto">
+      <div className="min-w-0 max-w-full overflow-hidden rounded-2xl border bg-card">
+        <div className="max-w-full overflow-x-auto overscroll-x-contain">
           <table className="w-full min-w-[600px]">
             <thead>
               <tr style={{ background: "#f9fafb" }}>
@@ -191,7 +191,7 @@ export default function ComprobantesPage({ pagos, onSelectPago, onRefresh, isFet
           </div>
         )}
       </div>
-      {cashOpen&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm" onMouseDown={(e)=>e.target===e.currentTarget&&setCashOpen(false)}><form onSubmit={submitCash} className="w-full max-w-xl rounded-3xl bg-white p-6 shadow-2xl"><div className="flex items-start justify-between"><div><h2 className="flex items-center gap-2 text-xl font-bold"><Banknote className="text-emerald-600"/>Registrar pago en efectivo</h2><p className="mt-1 text-sm text-slate-500">El monto se toma del cargo pendiente y quedará aprobado inmediatamente.</p></div><button type="button" onClick={()=>setCashOpen(false)} className="rounded-lg p-2 hover:bg-slate-100"><X size={18}/></button></div><div className="mt-5 grid gap-4"><label className="text-xs font-bold text-slate-600">Residente y departamento<select required value={cash.residentKey} onChange={(e)=>setCash({...cash,residentKey:e.target.value,cargo_id:''})} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5 text-sm"><option value="">Selecciona residente</option>{residents.map((item)=><option key={`${item.usuario_id}:${item.depto_id}`} value={`${item.usuario_id}:${item.depto_id}`}>{item.numero_depto} · {item.nombre}</option>)}</select></label><label className="text-xs font-bold text-slate-600">Cargo que está pagando<select required disabled={!selectedResident} value={cash.cargo_id} onChange={(e)=>setCash({...cash,cargo_id:e.target.value})} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5 text-sm"><option value="">Selecciona cargo pendiente</option>{selectedResident?.cargos.map((item)=><option key={item.id} value={item.id}>{item.periodo} · {item.concepto} · ${Number(item.monto).toLocaleString('es-MX',{minimumFractionDigits:2})}</option>)}</select></label>{selectedResident&&!selectedResident.cargos.length&&<p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-700">Este departamento no tiene cargos pendientes.</p>}<div className="grid gap-3 sm:grid-cols-2"><label className="text-xs font-bold text-slate-600">Recibió el efectivo<select required value={cash.recibido_por} onChange={(e)=>setCash({...cash,recibido_por:e.target.value})} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5 text-sm"><option value="">Selecciona integrante</option>{recipients.map((item)=><option key={item.id} value={item.id}>{item.nombre} · {item.rol}</option>)}</select></label><label className="text-xs font-bold text-slate-600">Fecha del pago<input required type="date" max={new Date().toISOString().slice(0,10)} value={cash.fecha_pago} onChange={(e)=>setCash({...cash,fecha_pago:e.target.value})} className="mt-1 w-full rounded-xl border px-3 py-2.5 text-sm"/></label></div><label className="text-xs font-bold text-slate-600">Notas opcionales<textarea maxLength={300} rows={2} value={cash.notas} onChange={(e)=>setCash({...cash,notas:e.target.value})} className="mt-1 w-full resize-none rounded-xl border px-3 py-2.5 text-sm" placeholder="Ej. Recibido durante reunión del comité"/></label>{selectedCharge&&<div className="rounded-2xl bg-emerald-50 p-4"><p className="text-xs font-bold uppercase text-emerald-700">Monto a registrar</p><p className="text-2xl font-bold text-emerald-800">${Number(selectedCharge.monto).toLocaleString('es-MX',{minimumFractionDigits:2})} MXN</p></div>}</div><div className="mt-6 flex justify-end gap-2 border-t pt-4"><button type="button" onClick={()=>setCashOpen(false)} className="rounded-xl border px-4 py-2 text-sm font-semibold">Cancelar</button><button disabled={cashLoading||!selectedCharge} className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2 text-sm font-bold text-white disabled:opacity-50">{cashLoading&&<Loader2 size={15} className="animate-spin"/>}Confirmar y notificar</button></div></form></div>}
+      {cashOpen&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-3 backdrop-blur-sm sm:p-4" onMouseDown={(e)=>e.target===e.currentTarget&&setCashOpen(false)}><form onSubmit={submitCash} className="max-h-[94dvh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:rounded-3xl sm:p-6"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><h2 className="flex items-center gap-2 text-lg font-bold sm:text-xl"><Banknote className="shrink-0 text-emerald-600"/>Registrar pago en efectivo</h2><p className="mt-1 text-sm text-slate-500">El monto se toma del cargo pendiente y quedará aprobado inmediatamente.</p></div><button type="button" onClick={()=>setCashOpen(false)} className="shrink-0 rounded-lg p-2 hover:bg-slate-100"><X size={18}/></button></div><div className="mt-5 grid gap-4"><label className="text-xs font-bold text-slate-600">Residente y departamento<select required value={cash.residentKey} onChange={(e)=>setCash({...cash,residentKey:e.target.value,cargo_id:''})} className="mt-1 w-full min-w-0 rounded-xl border bg-white px-3 py-2.5 text-sm"><option value="">Selecciona residente</option>{residents.map((item)=><option key={`${item.usuario_id}:${item.depto_id}`} value={`${item.usuario_id}:${item.depto_id}`}>{item.numero_depto} · {item.nombre}</option>)}</select></label><label className="text-xs font-bold text-slate-600">Cargo que está pagando<select required disabled={!selectedResident} value={cash.cargo_id} onChange={(e)=>setCash({...cash,cargo_id:e.target.value})} className="mt-1 w-full min-w-0 rounded-xl border bg-white px-3 py-2.5 text-sm"><option value="">Selecciona cargo pendiente</option>{selectedResident?.cargos.map((item)=><option key={item.id} value={item.id}>{item.periodo} · {item.concepto} · ${Number(item.monto).toLocaleString('es-MX',{minimumFractionDigits:2})}</option>)}</select></label>{selectedResident&&!selectedResident.cargos.length&&<p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-700">Este departamento no tiene cargos pendientes.</p>}<div className="grid gap-3 sm:grid-cols-2"><label className="text-xs font-bold text-slate-600">Recibió el efectivo<select required value={cash.recibido_por} onChange={(e)=>setCash({...cash,recibido_por:e.target.value})} className="mt-1 w-full min-w-0 rounded-xl border bg-white px-3 py-2.5 text-sm"><option value="">Selecciona integrante</option>{recipients.map((item)=><option key={item.id} value={item.id}>{item.nombre} · {item.rol}</option>)}</select></label><label className="text-xs font-bold text-slate-600">Fecha del pago<input required type="date" max={new Date().toISOString().slice(0,10)} value={cash.fecha_pago} onChange={(e)=>setCash({...cash,fecha_pago:e.target.value})} className="mt-1 w-full min-w-0 rounded-xl border px-3 py-2.5 text-sm"/></label></div><label className="text-xs font-bold text-slate-600">Notas opcionales<textarea maxLength={300} rows={2} value={cash.notas} onChange={(e)=>setCash({...cash,notas:e.target.value})} className="mt-1 w-full resize-none rounded-xl border px-3 py-2.5 text-sm" placeholder="Ej. Recibido durante reunión del comité"/></label>{selectedCharge&&<div className="rounded-2xl bg-emerald-50 p-4"><p className="text-xs font-bold uppercase text-emerald-700">Monto a registrar</p><p className="text-xl font-bold text-emerald-800 sm:text-2xl">${Number(selectedCharge.monto).toLocaleString('es-MX',{minimumFractionDigits:2})} MXN</p></div>}</div><div className="mt-6 flex flex-col-reverse gap-2 border-t pt-4 sm:flex-row sm:justify-end"><button type="button" onClick={()=>setCashOpen(false)} className="w-full rounded-xl border px-4 py-2.5 text-sm font-semibold sm:w-auto sm:py-2">Cancelar</button><button disabled={cashLoading||!selectedCharge} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50 sm:w-auto sm:py-2">{cashLoading&&<Loader2 size={15} className="animate-spin"/>}Confirmar y notificar</button></div></form></div>}
     </div>
   );
 }

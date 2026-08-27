@@ -418,7 +418,7 @@ export default function App() {
         </header>
 
         {/* Scrollable content */}
-        <main className="min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-contain p-4 sm:p-6">
+        <main className="min-h-0 min-w-0 flex-1 space-y-6 overflow-x-hidden overflow-y-auto overscroll-contain p-4 sm:p-6">
           <Suspense fallback={<ModuleLoading />}>
           {activeNav === 'comprobantes' ? (
             <ComprobantesPage

@@ -1,0 +1,2 @@
+import api from '../../../api';
+export const eventsApi={list:()=>api.get('/api/eventos'),residents:()=>api.get('/api/usuarios'),availableParking:(params:Record<string,unknown>)=>api.get('/api/eventos/cajones-disponibles',{params}),create:(payload:unknown)=>api.post('/api/eventos',payload),update:(id:string,payload:unknown)=>api.put(`/api/eventos/${id}`,payload),cancel:(id:string)=>api.patch(`/api/eventos/${id}/cancelar`)};

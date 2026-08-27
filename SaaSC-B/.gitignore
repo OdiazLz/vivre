@@ -1,0 +1,15 @@
+**/node_modules/
+**/dist/
+**/.env
+**/uploads/
+**/backups/
+
+saasc_backup.sql
+env.txt
+*.backup
+*.dump
+
+.vscode/
+.idea/
+.DS_Store
+.env.example

@@ -1,0 +1,6 @@
+import { pool } from '../db/index.js';
+export async function listLatestImprovements(condominioId:string,limit:number){return(await pool.query(`SELECT id,titulo,mensaje,imagenes,creado_en FROM comunicados WHERE condominio_id=$1 AND tipo='MEJORA' AND estatus='ENVIADO' ORDER BY creado_en DESC LIMIT $2`,[condominioId,limit])).rows;}
+export async function createPendingBroadcast(condominioId:string,titulo:string,mensaje:string,tipo:string,imagenes:string[]){return(await pool.query(`INSERT INTO comunicados(condominio_id,titulo,mensaje,tipo,imagenes,estatus) VALUES($1,$2,$3,$4,$5,'PENDIENTE') RETURNING *`,[condominioId,titulo,mensaje,tipo,JSON.stringify(imagenes)])).rows[0];}
+export async function completeBroadcast(id:string,enviados:number,fallidos:number){await pool.query(`UPDATE comunicados SET estatus='ENVIADO',enviados=$1,fallidos=$2,enviado_en=NOW() WHERE id=$3`,[enviados,fallidos,id]);}
+export async function listBroadcasts(condominioId:string){return(await pool.query(`SELECT * FROM comunicados WHERE condominio_id=$1 ORDER BY creado_en DESC`,[condominioId])).rows;}
+export async function deleteBroadcast(id:string,condominioId:string){return(await pool.query(`DELETE FROM comunicados WHERE id=$1 AND condominio_id=$2 RETURNING *`,[id,condominioId])).rows[0]||null;}

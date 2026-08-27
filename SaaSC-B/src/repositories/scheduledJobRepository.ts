@@ -1,0 +1,4 @@
+import { pool } from '../db/index.js';
+export async function listActiveCondominiumIds(){return(await pool.query(`SELECT id FROM condominios WHERE estatus='ACTIVO'`)).rows.map((row)=>row.id as string);}
+export async function listOverdueResidents(){return(await pool.query(`SELECT DISTINCT u.id,u.nombre,u.telefono_whatsapp,u.acceso_porton,d.numero_depto,d.id depto_id,d.condominio_id FROM usuarios u JOIN depto_usuarios du ON u.id=du.usuario_id JOIN departamentos d ON du.depto_id=d.id JOIN condominios co ON co.id=d.condominio_id AND co.estatus='ACTIVO' JOIN cargos c ON d.id=c.depto_id WHERE c.estado='PENDIENTE' AND c.creado_en<NOW()-INTERVAL '30 days' AND u.acceso_porton=true`)).rows;}
+export async function disableResidentGateAccess(id:string){await pool.query(`UPDATE usuarios SET acceso_porton=false WHERE id=$1`,[id]);}

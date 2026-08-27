@@ -1,0 +1,6 @@
+BEGIN;
+
+ALTER TABLE administradores
+  ADD COLUMN IF NOT EXISTS session_version INTEGER NOT NULL DEFAULT 0;
+
+COMMIT;

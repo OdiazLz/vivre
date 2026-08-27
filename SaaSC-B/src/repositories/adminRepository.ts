@@ -1,0 +1,18 @@
+import { pool } from '../db/index.js';
+import type { AdminRole, AssignableAdminRole } from '../types/domain.js';
+
+export async function findActiveAdminByEmail(email:string){const result=await pool.query(`SELECT a.*,c.estatus condominio_estatus FROM administradores a LEFT JOIN condominios c ON c.id=a.condominio_id WHERE LOWER(a.email)=LOWER($1) AND a.activo=true`,[email]);return result.rows[0]||null;}
+export async function touchAdminAccess(id:string){await pool.query('UPDATE administradores SET ultimo_acceso=NOW() WHERE id=$1',[id]);}
+export async function findActiveAdminSession(id:string){const result=await pool.query(`SELECT id,condominio_id,email,rol,session_version FROM administradores WHERE id=$1 AND activo=true`,[id]);return result.rows[0]||null;}
+export async function findAdminIdentityByEmail(email:string){const result=await pool.query(`SELECT id,rol FROM administradores WHERE LOWER(email)=LOWER($1)`,[email]);return result.rows[0]||null;}
+export async function createSuperAdmin(email:string,passwordHash:string){await pool.query(`INSERT INTO administradores(condominio_id,nombre,email,password_hash,rol,activo) VALUES(NULL,'Dueño de la plataforma',$1,$2,'SUPERADMIN',true)`,[email,passwordHash]);}
+export async function listCondominiumAdmins(condominioId:string){const result=await pool.query(`SELECT id,nombre,email,rol,activo,ultimo_acceso,creado_en FROM administradores WHERE condominio_id=$1 ORDER BY nombre`,[condominioId]);return result.rows;}
+export async function findScopedAdmin(id:string,condominioId:string){const result=await pool.query(`SELECT id,rol,activo FROM administradores WHERE id=$1 AND condominio_id=$2`,[id,condominioId]);return result.rows[0]||null;}
+export async function findAdminById(id:string){const result=await pool.query(`SELECT id,rol,activo,condominio_id FROM administradores WHERE id=$1`,[id]);return result.rows[0]||null;}
+export async function updateScopedAdminPassword(id:string,condominioId:string,passwordHash:string){await pool.query(`UPDATE administradores SET password_hash=$1,session_version=session_version+1,actualizado_en=NOW() WHERE id=$2 AND condominio_id=$3`,[passwordHash,id,condominioId]);}
+export async function updateAdminPassword(id:string,passwordHash:string){await pool.query(`UPDATE administradores SET password_hash=$1,session_version=session_version+1,actualizado_en=NOW() WHERE id=$2`,[passwordHash,id]);}
+export async function updateScopedAdminRole(id:string,condominioId:string,role:AssignableAdminRole){const result=await pool.query(`UPDATE administradores SET rol=$1,actualizado_en=NOW() WHERE id=$2 AND condominio_id=$3 RETURNING id,nombre,email,rol,activo`,[role,id,condominioId]);return result.rows[0]||null;}
+export async function createCondominiumAdmin(input:{condominioId:string;nombre:string;email:string;passwordHash:string;rol:AssignableAdminRole}){const result=await pool.query(`INSERT INTO administradores(condominio_id,nombre,email,password_hash,rol,activo) VALUES($1,$2,LOWER($3),$4,$5,true) RETURNING id,nombre,email,rol,activo,creado_en`,[input.condominioId,input.nombre,input.email,input.passwordHash,input.rol]);return result.rows[0];}
+export async function setScopedAdminActive(id:string,condominioId:string,active:boolean){const result=await pool.query(`UPDATE administradores SET activo=$1,actualizado_en=NOW() WHERE id=$2 AND condominio_id=$3 RETURNING id,nombre,email,rol,activo`,[active,id,condominioId]);return result.rows[0]||null;}
+export async function adminEmailExists(email:string){const result=await pool.query(`SELECT 1 FROM administradores WHERE LOWER(email)=LOWER($1)`,[email]);return Boolean(result.rows[0]);}
+export type AdminRecord={id:string;condominio_id:string|null;email:string;rol:AdminRole;session_version:number};

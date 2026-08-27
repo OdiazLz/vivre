@@ -1,0 +1,2 @@
+import { pool } from '../db/index.js';
+export async function createFileRecord(input:{condominioId:string;key:string;originalName:string;mime:string;size:number;category:string;storage:string;uploadedBy:string}){return(await pool.query(`INSERT INTO archivos(condominio_id,clave,nombre_original,mime_type,tamano_bytes,categoria,almacenamiento,subido_por) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id`,[input.condominioId,input.key,input.originalName,input.mime,input.size,input.category,input.storage,input.uploadedBy])).rows[0];}

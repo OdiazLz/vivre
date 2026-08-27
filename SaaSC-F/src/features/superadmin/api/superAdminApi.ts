@@ -1,0 +1,2 @@
+import api from '../../../api';
+export const superAdminApi={condominiums:()=>api.get('/api/superadmin/condominios'),setStatus:(id:string,estatus:string)=>api.patch(`/api/superadmin/condominios/${id}/estatus`,{estatus}),accounts:(id:string)=>api.get(`/api/superadmin/condominios/${id}/administradores`),resetPassword:(id:string,password:string)=>api.patch(`/api/superadmin/administradores/${id}/password`,{password}),createCondominium:(payload:unknown)=>api.post('/api/superadmin/condominios',payload)};

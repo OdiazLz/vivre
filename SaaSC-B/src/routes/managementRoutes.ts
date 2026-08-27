@@ -1,0 +1,23 @@
+import { Router } from 'express';
+import { authenticateToken, authorizeRoles } from '../middleware/authMiddleware.js';
+import { backupHandler, backupHistoryHandler, createAdministratorHandler, createExpenseHandler, departmentStatementPdfHandler, exportCsvHandler, financialStateHandler, generateChargesHandler, getAdministratorsHandler, getAnalyticsHandler, getAuditHandler, getExpensesHandler, publishFinancialStateHandler, resetAdministratorPasswordHandler, setAdministratorActiveHandler, updateAdministratorRoleHandler } from '../controllers/managementController.js';
+
+const router = Router();
+router.use(authenticateToken);
+router.get('/gestion/auditoria', authorizeRoles('ADMINISTRADOR', 'PRESIDENTE', 'SECRETARIO'), getAuditHandler);
+router.get('/gestion/analitica', authorizeRoles('ADMINISTRADOR', 'PRESIDENTE', 'SECRETARIO', 'TESORERO', 'VOCAL'), getAnalyticsHandler);
+router.post('/gestion/cuotas/generar', authorizeRoles('ADMINISTRADOR', 'PRESIDENTE', 'TESORERO'), generateChargesHandler);
+router.get('/gestion/finanzas/estado', authorizeRoles('ADMINISTRADOR', 'PRESIDENTE', 'SECRETARIO', 'TESORERO', 'VOCAL'), financialStateHandler);
+router.post('/gestion/finanzas/publicar', authorizeRoles('ADMINISTRADOR', 'PRESIDENTE', 'TESORERO'), publishFinancialStateHandler);
+router.get('/gestion/gastos', authorizeRoles('ADMINISTRADOR', 'PRESIDENTE', 'SECRETARIO', 'TESORERO', 'VOCAL'), getExpensesHandler);
+router.post('/gestion/gastos', authorizeRoles('ADMINISTRADOR', 'PRESIDENTE', 'TESORERO'), createExpenseHandler);
+router.get('/gestion/estados-cuenta/:id/pdf', authorizeRoles('ADMINISTRADOR', 'PRESIDENTE', 'TESORERO'), departmentStatementPdfHandler);
+router.get('/gestion/exportar/:modulo', authorizeRoles('ADMINISTRADOR', 'PRESIDENTE', 'TESORERO'), exportCsvHandler);
+router.post('/gestion/respaldos', authorizeRoles('ADMINISTRADOR', 'PRESIDENTE'), backupHandler);
+router.get('/gestion/respaldos', authorizeRoles('ADMINISTRADOR', 'PRESIDENTE'), backupHistoryHandler);
+router.get('/gestion/administradores', authorizeRoles('ADMINISTRADOR', 'PRESIDENTE'), getAdministratorsHandler);
+router.post('/gestion/administradores', authorizeRoles('ADMINISTRADOR'), createAdministratorHandler);
+router.patch('/gestion/administradores/:id/rol', authorizeRoles('ADMINISTRADOR'), updateAdministratorRoleHandler);
+router.patch('/gestion/administradores/:id/activo', authorizeRoles('ADMINISTRADOR'), setAdministratorActiveHandler);
+router.patch('/gestion/administradores/:id/password', authorizeRoles('ADMINISTRADOR', 'PRESIDENTE'), resetAdministratorPasswordHandler);
+export default router;

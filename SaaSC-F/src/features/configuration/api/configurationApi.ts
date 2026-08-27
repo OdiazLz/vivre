@@ -1,0 +1,2 @@
+import api from '../../../api';
+export const configurationApi={get:()=>api.get('/api/configuracion'),parking:()=>api.get('/api/configuracion/cajones'),update:(payload:unknown)=>api.put('/api/configuracion',payload),createParking:(payload:unknown)=>api.post('/api/configuracion/cajones',payload),removeParking:(id:string)=>api.delete(`/api/configuracion/cajones/${id}`),setParkingStatus:(id:string,estatus:string)=>api.patch(`/api/configuracion/cajones/${id}`,{estatus})};

@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { managementApi } from '../features/management/api/managementApi';
 import { uploadFile } from '../shared/api/filesApi';
 import FileDropzone from './FileDropzone';
-import { ASSIGNABLE_ADMIN_ROLES, type AdminRole } from '../types/domain';
+import { ASSIGNABLE_ADMIN_ROLES, PRESIDENT_ASSIGNABLE_ADMIN_ROLES, type AdminRole } from '../types/domain';
 
 interface FinancialState { periodo: string; ingresos: string; gastos: string; fondo_disponible: string; morosidad: string; departamentos_corriente: string; total_departamentos: string }
 interface Analytics { estacionamiento: { estatus: string; total: number }[]; reincidencias: { articulo: string; incidencias: number; monto: string }[]; reincidentes?: { numero_depto: string; total_multas: number; articulos: string }[] }
@@ -79,6 +79,8 @@ export default function GestionPage({ role }: { role: AdminRole }) {
   const canManageFinances = ['ADMINISTRADOR', 'PRESIDENTE', 'TESORERO'].includes(role);
   const isAdministrator = role === 'ADMINISTRADOR';
   const canViewAccounts = ['ADMINISTRADOR', 'PRESIDENTE'].includes(role);
+  const canCreateAccounts = ['ADMINISTRADOR', 'PRESIDENTE'].includes(role);
+  const createAccountRoles = isAdministrator ? ASSIGNABLE_ADMIN_ROLES : PRESIDENT_ASSIGNABLE_ADMIN_ROLES;
   const canExportAll = ['ADMINISTRADOR', 'PRESIDENTE'].includes(role);
   const canCreateBackups = ['ADMINISTRADOR', 'PRESIDENTE'].includes(role);
   const canResetAccount = (target: Administrator) => target.activo && (isAdministrator
@@ -138,12 +140,12 @@ export default function GestionPage({ role }: { role: AdminRole }) {
 
     {canViewAccounts &&
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="flex items-center justify-between"><div><h2 className="font-bold text-slate-900">Cuentas del comité y personal</h2><p className="text-sm text-slate-500">{isAdministrator ? 'Puedes crear cuentas, administrar permisos y atender solicitudes de contraseña.' : 'Puedes restablecer contraseñas de las cuentas subordinadas del comité y personal.'}</p></div><ShieldCheck className="text-indigo-600"/></div>
-        {isAdministrator && <form className="mt-5 grid gap-3 rounded-2xl bg-slate-50 p-4 md:grid-cols-2 xl:grid-cols-5" onSubmit={(event) => { event.preventDefault(); void action('create-account', () => managementApi.createAdministrator(account).then(() => setAccount({ nombre: '', email: '', password: '', rol: 'VOCAL' })), 'Cuenta creada correctamente.'); }}>
+        <div className="flex items-center justify-between"><div><h2 className="font-bold text-slate-900">Cuentas del comité y personal</h2><p className="text-sm text-slate-500">{isAdministrator ? 'Puedes crear cuentas, administrar permisos y atender solicitudes de contraseña.' : 'Puedes crear cuentas subordinadas del comité y restablecer sus contraseñas. Los roles protegidos requieren al Administrador.'}</p></div><ShieldCheck className="text-indigo-600"/></div>
+        {canCreateAccounts && <form className="mt-5 grid gap-3 rounded-2xl bg-slate-50 p-4 md:grid-cols-2 xl:grid-cols-5" onSubmit={(event) => { event.preventDefault(); void action('create-account', () => managementApi.createAdministrator(account).then(() => setAccount({ nombre: '', email: '', password: '', rol: 'VOCAL' })), 'Cuenta creada correctamente.'); }}>
           <input value={account.nombre} onChange={(e) => setAccount({ ...account, nombre: e.target.value })} placeholder="Nombre completo" autoComplete="name" className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm" required />
           <input value={account.email} onChange={(e) => setAccount({ ...account, email: e.target.value })} type="email" placeholder="correo@condominio.mx" autoComplete="email" className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm" required />
           <input value={account.password} onChange={(e) => setAccount({ ...account, password: e.target.value })} type="password" minLength={12} placeholder="Contraseña segura" autoComplete="new-password" className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm" required />
-          <select value={account.rol} onChange={(e) => setAccount({ ...account, rol: e.target.value as AdminRole })} className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm">{ASSIGNABLE_ADMIN_ROLES.map((item) => <option key={item}>{item}</option>)}</select>
+          <select value={account.rol} onChange={(e) => setAccount({ ...account, rol: e.target.value as AdminRole })} className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm">{createAccountRoles.map((item) => <option key={item}>{item}</option>)}</select>
           <button disabled={!!working} className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"><UserPlus size={16}/>{working === 'create-account' ? 'Creando…' : 'Crear cuenta'}</button>
           <p className="text-xs text-slate-500 md:col-span-2 xl:col-span-5">La contraseña debe tener al menos 12 caracteres e incluir mayúscula, minúscula, número y símbolo.</p>
         </form>}

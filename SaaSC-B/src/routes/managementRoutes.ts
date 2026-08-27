@@ -16,7 +16,7 @@ router.get('/gestion/exportar/:modulo', authorizeRoles('ADMINISTRADOR', 'PRESIDE
 router.post('/gestion/respaldos', authorizeRoles('ADMINISTRADOR', 'PRESIDENTE'), backupHandler);
 router.get('/gestion/respaldos', authorizeRoles('ADMINISTRADOR', 'PRESIDENTE'), backupHistoryHandler);
 router.get('/gestion/administradores', authorizeRoles('ADMINISTRADOR', 'PRESIDENTE'), getAdministratorsHandler);
-router.post('/gestion/administradores', authorizeRoles('ADMINISTRADOR'), createAdministratorHandler);
+router.post('/gestion/administradores', authorizeRoles('ADMINISTRADOR', 'PRESIDENTE'), createAdministratorHandler);
 router.patch('/gestion/administradores/:id/rol', authorizeRoles('ADMINISTRADOR'), updateAdministratorRoleHandler);
 router.patch('/gestion/administradores/:id/activo', authorizeRoles('ADMINISTRADOR'), setAdministratorActiveHandler);
 router.patch('/gestion/administradores/:id/password', authorizeRoles('ADMINISTRADOR', 'PRESIDENTE'), resetAdministratorPasswordHandler);

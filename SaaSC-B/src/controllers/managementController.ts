@@ -8,7 +8,7 @@ import { getAllActiveUsers } from '../repositories/userRepository.js';
 import { sendMessageWhatssap } from '../services/whatsappService.js';
 import { cleanPhoneNumber } from '../utils/phone.js';
 import bcrypt from 'bcrypt';
-import { ASSIGNABLE_ADMIN_ROLES, type AssignableAdminRole } from '../types/domain.js';
+import { ASSIGNABLE_ADMIN_ROLES, PRESIDENT_ASSIGNABLE_ADMIN_ROLES, type AssignableAdminRole } from '../types/domain.js';
 import { createCondominiumAdmin, findScopedAdmin, listCondominiumAdmins, setScopedAdminActive, updateScopedAdminPassword, updateScopedAdminRole } from '../repositories/adminRepository.js';
 import { MANAGEMENT_EXPORTS, createExpense, exportManagementModule, listAudit, listBackups, listExpenses, scopedDepartmentExists } from '../repositories/managementRepository.js';
 
@@ -152,7 +152,8 @@ export async function createAdministratorHandler(req: AuthRequest, res: Response
     const { nombre, email, password, rol } = req.body;
     const cleanName = String(nombre || '').trim();
     const cleanEmail = String(email || '').trim();
-    if (cleanName.length < 3 || cleanName.length > 120 || cleanEmail.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail) || !ASSIGNABLE_ADMIN_ROLES.includes(rol)) return res.status(400).json({ error: 'Nombre, correo válido y rol del comité son obligatorios.' });
+    const allowedRoles: readonly string[] = req.user!.rol === 'PRESIDENTE' ? PRESIDENT_ASSIGNABLE_ADMIN_ROLES : ASSIGNABLE_ADMIN_ROLES;
+    if (cleanName.length < 3 || cleanName.length > 120 || cleanEmail.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail) || !allowedRoles.includes(rol)) return res.status(400).json({ error: 'Nombre, correo válido y un rol permitido del comité son obligatorios.' });
     if (typeof password !== 'string' || password.length < 12 || password.length > 128 || !/[a-z]/.test(password) || !/[A-Z]/.test(password) || !/\d/.test(password) || !/[^A-Za-z0-9]/.test(password)) return res.status(400).json({ error: 'La contraseña debe tener entre 12 y 128 caracteres, mayúscula, minúscula, número y símbolo.' });
     const hash = await bcrypt.hash(password, 12);
     const result = await createCondominiumAdmin({condominioId:req.user!.condominio_id,nombre:cleanName,email:cleanEmail,passwordHash:hash,rol:rol as AssignableAdminRole});

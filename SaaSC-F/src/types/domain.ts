@@ -2,6 +2,7 @@ export const ADMIN_ROLES = ['SUPERADMIN','ADMINISTRADOR','PRESIDENTE','SECRETARI
 export type AdminRole = typeof ADMIN_ROLES[number];
 export const ASSIGNABLE_ADMIN_ROLES = ['PRESIDENTE','SECRETARIO','TESORERO','VOCAL','SEGURIDAD','MANTENIMIENTO'] as const;
 export type AssignableAdminRole = typeof ASSIGNABLE_ADMIN_ROLES[number];
+export const PRESIDENT_ASSIGNABLE_ADMIN_ROLES = ['SECRETARIO','TESORERO','VOCAL','SEGURIDAD','MANTENIMIENTO'] as const;
 export interface AuthenticatedUser { nombre:string; email:string; rol:AdminRole; condominio_estatus?:'ACTIVO'|'SUSPENDIDO'|null }
 export interface RegulationArticle { id:string; codigo:string; nombre:string; etiqueta:string; descripcion?:string|null; orden:number }
 export type RegulationStatus = 'BORRADOR'|'VIGENTE'|'DEROGADO';

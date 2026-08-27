@@ -183,16 +183,16 @@ export default function ConfiguracionPage() {
       </div>
 
       {/* Config Sections */}
-      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(280px,0.7fr)_minmax(0,1.3fr)]">
+      <div className="grid grid-cols-1 gap-6">
         {/* Información General */}
-        <div className="bg-card rounded-2xl border p-6" style={{ borderColor: "#e5e7eb", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
-          <div className="flex items-center gap-2 mb-4">
+        <div className="rounded-2xl border bg-card p-6 lg:flex lg:items-end lg:gap-8" style={{ borderColor: "#e5e7eb", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
+          <div className="mb-4 flex items-center gap-2 lg:mb-2 lg:min-w-56">
             <User className="w-5 h-5 text-blue-600" />
             <h2 className="text-lg font-bold text-foreground" style={{ fontFamily: "Plus Jakarta Sans, sans-serif" }}>
               Información General
             </h2>
           </div>
-          <div className="space-y-4">
+          <div className="min-w-0 flex-1">
             <div>
               <label className="block text-sm font-medium text-foreground mb-1.5">Nombre del Condominio</label>
               <input
@@ -216,6 +216,7 @@ export default function ConfiguracionPage() {
             </h2>
           </div>
           <div className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="block text-sm font-medium text-foreground mb-1.5">Monto de Cuota ($)</label>
               <input
@@ -240,6 +241,7 @@ export default function ConfiguracionPage() {
                 placeholder="10"
               />
               <p className="text-xs text-muted-foreground mt-1">Día del mes en que vence la cuota</p>
+            </div>
             </div>
             <div className="border-t border-slate-100 pt-4"><div className="mb-3 flex items-center gap-2"><Landmark size={17} className="text-indigo-600"/><div><h3 className="text-sm font-bold text-slate-800">Datos para depósitos por WhatsApp</h3><p className="text-xs text-slate-500">Sólo se comparten con residentes registrados que los soliciten.</p></div></div><div className="grid gap-3 sm:grid-cols-2">
               <div><label className="mb-1 block text-xs font-semibold text-slate-600">Banco</label><input value={config.banco || ''} maxLength={100} onChange={(e) => setConfig({ ...config, banco: e.target.value })} placeholder="Ej. BBVA" className="w-full rounded-xl border border-slate-200 bg-muted px-3 py-2.5 text-sm outline-none focus:border-indigo-400"/></div>

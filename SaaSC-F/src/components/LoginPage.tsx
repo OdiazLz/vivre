@@ -244,9 +244,16 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
               </button>
             </form>
 
-            <div className="mt-8 flex items-center justify-center gap-2 border-t border-slate-100 pt-6 text-xs text-slate-400">
-              <ShieldCheck size={15} className="text-emerald-500" />
-              Tus datos se transmiten de forma segura
+            <div className="mt-8 border-t border-slate-100 pt-6 text-center text-xs text-slate-400">
+              <div className="flex items-center justify-center gap-2">
+                <ShieldCheck size={15} className="text-emerald-500" />
+                Tus datos se transmiten de forma segura
+              </div>
+              <nav className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-2" aria-label="Información legal">
+                <a className="transition hover:text-indigo-600" href="/privacidad">Privacidad</a>
+                <a className="transition hover:text-indigo-600" href="/terminos">Términos</a>
+                <a className="transition hover:text-indigo-600" href="/eliminar-datos">Eliminar mis datos</a>
+              </nav>
             </div>
           </div>
         </section>

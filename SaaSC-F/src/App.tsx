@@ -29,6 +29,7 @@ import { NAVIGATION_ITEMS } from './config/navigation';
 import { useCondominiumName } from './features/condominium/hooks/useCondominiumName';
 import { API_BASE_URL } from './config/env';
 import { SidebarLogo } from './components/branding/VivreLogo';
+import LegalPage, { type LegalPageKind } from './components/LegalPage';
 
 const ComprobantesPage = lazy(() => import('./components/ComprobantesPage'));
 const IncidenciasPage = lazy(() => import('./components/IncidenciasPage'));
@@ -111,6 +112,12 @@ export default function App() {
   const [isBroadcastOpen, setIsBroadcastOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
   const recaudacionBarRef = useRef<{ refresh: () => void }>(null);
+  const publicLegalPath = window.location.pathname.replace(/\/+$/, '') || '/';
+  const publicLegalPages: Record<string, LegalPageKind> = {
+    '/privacidad': 'privacidad',
+    '/terminos': 'terminos',
+    '/eliminar-datos': 'eliminar-datos',
+  };
 
   useEffect(() => {
     if (!userInfo) return;
@@ -212,6 +219,10 @@ export default function App() {
     ...item,
     badge: item.id === 'comprobantes' ? pendingCount : 0
   }));
+
+  if (publicLegalPages[publicLegalPath]) {
+    return <LegalPage kind={publicLegalPages[publicLegalPath]} />;
+  }
 
   if (!isAuthenticated) {
     return <><LoginPage onLogin={handleLogin} /><Toaster position="top-right" /></>;

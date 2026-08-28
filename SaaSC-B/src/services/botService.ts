@@ -27,31 +27,53 @@ export class BotService {
 public async sendMainMenu(phone: string, nombre: string) {
     const cleanPhone = cleanPhoneNumber(phone);
 
+    try {
+        await sendWhatsAppButton(
+            cleanPhone,
+            `🏢 *Menú principal*\n\n¡Hola ${nombre}! ¿Qué necesitas consultar?`,
+            [
+                { id: 'btn_saldo', title: 'Consultar saldo' },
+                { id: 'btn_datos_pago', title: 'Datos para pagar' },
+                { id: 'btn_mas_opciones', title: 'Más opciones' },
+            ],
+            'Vivre · Asistente condominal'
+        );
+    } catch {
+        await sendMessageWhatssap(
+            cleanPhone,
+            `🏢 *Menú principal*\n\n¡Hola ${nombre}!\n\nEscribe una opción:\n• *SALDO*\n• *DATOS PARA PAGAR*\n• *ESTADO DE CUENTA*\n• *REGLAMENTO*\n• *ASAMBLEAS*\n• *CAJONES*\n• *OBRAS*`
+        );
+    }
+}
+
+private async sendExtendedMenu(phone: string) {
+    const cleanPhone = cleanPhoneNumber(phone);
+
     const messageData = {
         messaging_product: 'whatsapp',
         to: cleanPhone,
         type: 'interactive',
         interactive: {
             type: 'list',
-            header: { type: 'text', text: '🏢 Menú Principal' },
-            body: { text: `¡Hola ${nombre}! Selecciona la opción que necesitas:` },
-            footer: { text: 'Residencial - Asistente' },
+            header: { type: 'text', text: '📋 Más opciones' },
+            body: { text: 'Selecciona el servicio que necesitas:' },
+            footer: { text: 'Vivre · Asistente condominal' },
             action: {
-                button: 'Ver Opciones',
+                button: 'Ver opciones',
                 sections: [
                     {
                         title: 'Servicios Principales',
                         rows: [
-                            { id: 'btn_saldo', title: '💳 Consultar Saldo', description: 'Revisar saldo actual y cuotas' },
                             { id: 'btn_cuenta', title: '📄 Estado de cuenta', description: 'Recibir el detalle en PDF' },
                             { id: 'btn_transparencia', title: '📊 Estado general', description: 'Consultar el reporte publicado' },
                             { id: 'btn_pago', title: '📄 Enviar Comprobante', description: 'Adjuntar foto o PDF de pago' },
-                            { id: 'btn_datos_pago', title: '💳 Datos para pagar', description: 'Cuenta, CLABE o tarjeta' },
                             { id: 'btn_votaciones', title: '🗳️ Asambleas', description: 'Consultar y emitir votos' },
                             { id: 'btn_incidencia', title: '🛠️ Reportar Falla', description: 'Incidencias en áreas comunes' },
                             { id: 'btn_evento', title: '🎉 Registrar Evento', description: 'Reuniones según el reglamento vigente' },
+                            { id: 'btn_mis_eventos', title: '📅 Mis eventos', description: 'Consultar, editar o cancelar eventos' },
                             { id: 'btn_cajones', title: '🚗 Estacionamiento', description: 'Consultar y apartar cajón EV' },
-                            { id: 'btn_reglamento', title: '📜 Ver Reglamento', description: 'Normas y multas del residencial' }
+                            { id: 'btn_reglamento', title: '📜 Ver Reglamento', description: 'Normas y multas del residencial' },
+                            { id: 'btn_mejoras', title: '🏗️ Mejoras', description: 'Consultar avances y trabajos terminados' }
                         ]
                     }
                 ]
@@ -128,6 +150,9 @@ public async sendMainMenu(phone: string, nombre: string) {
             case 'btn_saldo':
                 await this.processSaldo(phone, false);
                 break;
+            case 'btn_mas_opciones':
+                await this.sendExtendedMenu(phone);
+                break;
             case 'btn_cuenta':
                 await this.processSaldo(phone, true);
                 break;
@@ -158,11 +183,17 @@ public async sendMainMenu(phone: string, nombre: string) {
                     '🎉 *Avisar Evento*\n\nPor favor envía: "evento [Fecha] [Hora] [Título]"\n\nEjemplo: "evento 2026-08-29 19:00 Cumpleaños Juan"\n\nAplican las reglas vigentes de eventos de tu privada.'
                 );
                 break;
+            case 'btn_mis_eventos':
+                await this.processMyEvents(phone);
+                break;
             case 'btn_cajones':
                 await this.processCajones(phone);
                 break;
             case 'btn_reglamento':
                 await sendMessageWhatssap(phone, await formatCurrentRegulation(usuario.condominio_id) || '📘 El Reglamento todavía no ha sido publicado por la administración.');
+                break;
+            case 'btn_mejoras':
+                await this.processImprovements(phone, usuario.condominio_id);
                 break;
             default:
                 await sendMessageWhatssap(phone, '⚠️ Opción no reconocida. Por favor intenta de nuevo.');

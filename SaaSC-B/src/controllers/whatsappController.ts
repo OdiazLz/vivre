@@ -38,9 +38,10 @@ export class WhatsappController {
             await this.botService.processIncomingMessage(cleanFrom, textBody);
           }
           else if (type === 'interactive') {
-            const buttonId = message.interactive?.button_reply?.id;
-            if (buttonId) {
-              await this.botService.processInteractiveReply(cleanFrom, buttonId);
+            const interactiveId = message.interactive?.button_reply?.id
+              || message.interactive?.list_reply?.id;
+            if (interactiveId) {
+              await this.botService.processInteractiveReply(cleanFrom, interactiveId);
             }
           }
           else if (type === 'image' || type === 'document') {
@@ -59,6 +60,7 @@ export class WhatsappController {
         res.sendStatus(404);
       }
     } catch (error) {
+      console.error('❌ Error procesando webhook de WhatsApp:', error);
       res.status(200).send('EVENT_RECEIVED');
     }
   }

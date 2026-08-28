@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import QRCode from 'qrcode';
 import axios from 'axios';
-import { Check, Clipboard, Clock3, Link2, Loader2, MessageCircle, Plus, QrCode, Share2, UserCheck, UserX, X } from 'lucide-react';
+import { Check, Clipboard, Clock3, Link2, Loader2, MessageCircle, Plus, QrCode, RefreshCw, Share2, UserCheck, UserX, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { registrationApi } from '../features/registration/api/registrationApi';
 
@@ -22,8 +22,8 @@ export default function WhatsAppRegistrationModal({ isOpen, onClose, onApproved 
   const [working, setWorking] = useState('');
   const [form, setForm] = useState({ descripcion: 'Registro general de residentes', dias_vigencia: 30, max_usos: 100 });
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async (showLoading = true) => {
+    if (showLoading) setLoading(true);
     try {
       const [invitationResponse, requestResponse] = await Promise.all([
         registrationApi.invitations(),
@@ -32,10 +32,26 @@ export default function WhatsAppRegistrationModal({ isOpen, onClose, onApproved 
       setInvitations(invitationResponse.data);
       setRequests(requestResponse.data);
     } catch { toast.error('No se pudo cargar el registro por WhatsApp.'); }
-    finally { setLoading(false); }
+    finally { if (showLoading) setLoading(false); }
   }, []);
 
-  useEffect(() => { if (isOpen) void load(); }, [isOpen, load]);
+  useEffect(() => {
+    if (!isOpen) return;
+    void load();
+
+    const refreshIfVisible = () => {
+      if (document.visibilityState === 'visible') void load(false);
+    };
+    const intervalId = window.setInterval(refreshIfVisible, 15_000);
+    window.addEventListener('focus', refreshIfVisible);
+    document.addEventListener('visibilitychange', refreshIfVisible);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener('focus', refreshIfVisible);
+      document.removeEventListener('visibilitychange', refreshIfVisible);
+    };
+  }, [isOpen, load]);
   useEffect(() => {
     if (!selected?.wa_link) { setQr(''); return; }
     void QRCode.toDataURL(selected.wa_link, { width: 320, margin: 2, color: { dark: '#0f172a', light: '#ffffff' } }).then(setQr);
@@ -55,10 +71,29 @@ export default function WhatsAppRegistrationModal({ isOpen, onClose, onApproved 
     await navigator.clipboard.writeText(text); toast.success(message);
   };
 
+  const invitationText = (invitation: Invitation) => {
+    const instructions = `Regístrate en la privada por WhatsApp. Envía: ${invitation.mensaje_whatsapp}`;
+    return invitation.wa_link ? `${instructions}\n\n${invitation.wa_link}` : instructions;
+  };
+
   const share = async (invitation: Invitation) => {
     const text = `Regístrate en la privada por WhatsApp. Envía: ${invitation.mensaje_whatsapp}`;
-    if (navigator.share) await navigator.share({ title: 'Registro de residente', text, url: invitation.wa_link || undefined });
-    else await copy(invitation.wa_link || invitation.mensaje_whatsapp, 'Invitación copiada.');
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'Registro de residente', text, url: invitation.wa_link || undefined });
+        return;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
+      }
+    }
+
+    const whatsappShareUrl = `https://wa.me/?text=${encodeURIComponent(invitationText(invitation))}`;
+    const popup = window.open(whatsappShareUrl, '_blank', 'noopener,noreferrer');
+    if (popup) {
+      toast.success('Abriendo WhatsApp para compartir.');
+      return;
+    }
+    await copy(invitationText(invitation), 'Invitación copiada. Pégala en WhatsApp.');
   };
 
   const review = async (request: RegistrationRequest, approve: boolean) => {
@@ -88,7 +123,10 @@ export default function WhatsAppRegistrationModal({ isOpen, onClose, onApproved 
     <div className="flex max-h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
       <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 sm:px-7">
         <div className="flex items-center gap-3"><div className="rounded-2xl bg-emerald-50 p-2.5 text-emerald-600"><MessageCircle size={23}/></div><div><h2 className="text-xl font-bold text-slate-900">Registro por WhatsApp</h2><p className="text-sm text-slate-500">Invitaciones seguras y solicitudes de residentes</p></div></div>
-        <button onClick={onClose} className="rounded-xl p-2 text-slate-400 hover:bg-slate-100"><X size={20}/></button>
+        <div className="flex items-center gap-1">
+          <button onClick={() => void load()} disabled={loading} className="rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-emerald-600 disabled:opacity-50" aria-label="Actualizar solicitudes" title="Actualizar solicitudes"><RefreshCw size={19} className={loading ? 'animate-spin' : ''}/></button>
+          <button onClick={onClose} className="rounded-xl p-2 text-slate-400 hover:bg-slate-100" aria-label="Cerrar"><X size={20}/></button>
+        </div>
       </div>
       <div className="flex border-b border-slate-100 px-5 sm:px-7">{([['solicitudes', `Solicitudes (${pending.length})`], ['invitaciones', 'Invitaciones']] as const).map(([id,label]) => <button key={id} onClick={() => setTab(id)} className={`border-b-2 px-4 py-3 text-sm font-semibold ${tab === id ? 'border-emerald-600 text-emerald-700' : 'border-transparent text-slate-500'}`}>{label}</button>)}</div>
 
@@ -102,7 +140,7 @@ export default function WhatsAppRegistrationModal({ isOpen, onClose, onApproved 
             <section className="space-y-2"><h3 className="font-bold text-slate-900">Códigos generados</h3>{invitations.map((invitation) => <button key={invitation.id} onClick={() => setSelected(invitation)} className={`w-full rounded-2xl border p-4 text-left ${selected?.id === invitation.id ? 'border-emerald-400 bg-emerald-50/50' : 'border-slate-200'}`}><div className="flex items-center justify-between gap-3"><b className="font-mono text-slate-900">{invitation.codigo}</b><span className={`rounded-full px-2 py-1 text-[10px] font-bold ${invitation.vigente ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>{invitation.vigente ? 'VIGENTE' : 'INACTIVO'}</span></div><p className="mt-1 text-xs text-slate-500">{invitation.usos}/{invitation.max_usos} usos · vence {new Date(invitation.expira_en).toLocaleDateString('es-MX')}</p></button>)}</section>
           </div>
           <aside className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-            {!selected ? <div className="flex min-h-80 flex-col items-center justify-center text-center text-slate-500"><QrCode size={40} className="mb-3 text-slate-300"/><p className="text-sm">Genera o selecciona una invitación para compartirla.</p></div> : <div className="text-center"><h3 className="font-bold text-slate-900">Invitación para residentes</h3>{qr ? <img src={qr} alt={`QR ${selected.codigo}`} className="mx-auto my-4 w-full max-w-64 rounded-2xl border bg-white p-3"/> : <div className="my-4 rounded-xl bg-amber-50 p-4 text-sm text-amber-800">Configura <b>WHATSAPP_PUBLIC_NUMBER</b> en el backend para generar el enlace y QR.</div>}<div className="rounded-xl bg-white p-3 font-mono text-lg font-bold text-slate-900">{selected.mensaje_whatsapp}</div><div className="mt-4 grid grid-cols-2 gap-2"><button onClick={() => void copy(selected.mensaje_whatsapp, 'Código copiado.')} className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold"><Clipboard size={15}/>Copiar</button><button onClick={() => void share(selected)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-3 py-2 text-sm font-semibold text-white"><Share2 size={15}/>Compartir</button>{selected.wa_link && <a href={selected.wa_link} target="_blank" rel="noreferrer" className="col-span-2 inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700"><Link2 size={15}/>Probar enlace en WhatsApp</a>}</div>{selected.activo && <button onClick={() => void deactivate(selected)} className="mt-5 text-xs font-semibold text-rose-600">Desactivar esta invitación</button>}</div>}
+            {!selected ? <div className="flex min-h-80 flex-col items-center justify-center text-center text-slate-500"><QrCode size={40} className="mb-3 text-slate-300"/><p className="text-sm">Genera o selecciona una invitación para compartirla.</p></div> : <div className="text-center"><h3 className="font-bold text-slate-900">Invitación para residentes</h3>{qr ? <img src={qr} alt={`QR ${selected.codigo}`} className="mx-auto my-4 w-full max-w-64 rounded-2xl border bg-white p-3"/> : <div className="my-4 rounded-xl bg-amber-50 p-4 text-sm text-amber-800">Configura <b>WHATSAPP_PUBLIC_NUMBER</b> en el backend para generar el enlace y QR.</div>}<div className="rounded-xl bg-white p-3 font-mono text-lg font-bold text-slate-900">{selected.mensaje_whatsapp}</div><div className="mt-4 grid grid-cols-2 gap-2"><button onClick={() => void copy(invitationText(selected), 'Invitación completa copiada.')} className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold"><Clipboard size={15}/>Copiar</button><button onClick={() => void share(selected)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-3 py-2 text-sm font-semibold text-white"><Share2 size={15}/>Compartir</button>{selected.wa_link && <a href={selected.wa_link} target="_blank" rel="noreferrer" className="col-span-2 inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700"><Link2 size={15}/>Probar enlace en WhatsApp</a>}</div>{selected.activo && <button onClick={() => void deactivate(selected)} className="mt-5 text-xs font-semibold text-rose-600">Desactivar esta invitación</button>}</div>}
           </aside>
         </div>}
       </div>

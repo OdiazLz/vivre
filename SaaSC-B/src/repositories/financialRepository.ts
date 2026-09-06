@@ -42,7 +42,7 @@ export async function generateMonthlyCharges(condominioId: string, periodo?: str
       JOIN condominios condominio ON condominio.id = departamento.condominio_id
       WHERE cargo.depto_id = departamento.id
         AND departamento.condominio_id = $1
-        AND cargo.periodo = $2
+        AND cargo.periodo = $2::varchar(7)
         AND cargo.estado = 'PENDIENTE'
         AND COALESCE(cargo.concepto, 'Cuota de mantenimiento') = 'Cuota de mantenimiento'
         AND cargo.monto = 0
@@ -51,13 +51,13 @@ export async function generateMonthlyCharges(condominioId: string, periodo?: str
 
     const inserted = await client.query(`
       INSERT INTO cargos (depto_id, periodo, monto, estado, concepto)
-      SELECT d.id, $2, c.monto_cuota, 'PENDIENTE', 'Cuota de mantenimiento'
+      SELECT d.id, $2::varchar(7), c.monto_cuota, 'PENDIENTE', 'Cuota de mantenimiento'
       FROM departamentos d
       JOIN condominios c ON c.id = d.condominio_id
       WHERE d.condominio_id = $1
         AND NOT EXISTS (
           SELECT 1 FROM cargos existente
-          WHERE existente.depto_id=d.id AND existente.periodo=$2
+          WHERE existente.depto_id=d.id AND existente.periodo=$2::varchar(7)
             AND COALESCE(existente.concepto, 'Cuota de mantenimiento')='Cuota de mantenimiento'
         )
       RETURNING id;
@@ -70,7 +70,7 @@ export async function generateMonthlyCharges(condominioId: string, periodo?: str
       FROM condominios c
       LEFT JOIN departamentos d ON d.condominio_id = c.id
       LEFT JOIN cargos cargo ON cargo.depto_id = d.id
-        AND cargo.periodo = $2
+        AND cargo.periodo = $2::varchar(7)
         AND COALESCE(cargo.concepto, 'Cuota de mantenimiento') = 'Cuota de mantenimiento'
       WHERE c.id = $1
       GROUP BY c.id

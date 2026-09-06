@@ -1,24 +1,33 @@
 import { pool } from '../db/index.js';
+import { applyAvailableCreditForCondominium } from './accountRepository.js';
 
 export async function getAccountStatement(deptoId: string) {
   const [depto, cargos, multas, pagos] = await Promise.all([
     pool.query('SELECT id, numero_depto FROM departamentos WHERE id = $1', [deptoId]),
-    pool.query(`SELECT id, periodo, concepto, monto, estado, creado_en FROM cargos WHERE depto_id = $1 ORDER BY creado_en DESC`, [deptoId]),
+    pool.query(`SELECT c.id,c.periodo,c.concepto,c.monto,c.estado,c.creado_en,
+      COALESCE(ap.aplicado,0)::numeric monto_aplicado,
+      GREATEST(c.monto-COALESCE(ap.aplicado,0),0)::numeric saldo_pendiente
+      FROM cargos c LEFT JOIN (SELECT cargo_id,SUM(monto) aplicado FROM aplicaciones_pago GROUP BY cargo_id) ap ON ap.cargo_id=c.id
+      WHERE c.depto_id=$1 ORDER BY c.creado_en DESC`, [deptoId]),
     pool.query(`SELECT id, articulo_reglamento, motivo, monto, estatus, creado_en FROM multas WHERE depto_id = $1 ORDER BY creado_en DESC`, [deptoId]),
-    pool.query(`SELECT id, monto, estatus, creado_en FROM pagos WHERE depto_id = $1 ORDER BY creado_en DESC LIMIT 20`, [deptoId]),
+    pool.query(`SELECT id,monto,estatus,saldo_no_aplicado,creado_en,
+      COALESCE(SUM(saldo_no_aplicado) FILTER(WHERE estatus='APROBADO') OVER(),0)::numeric saldo_favor_total
+      FROM pagos WHERE depto_id=$1 ORDER BY creado_en DESC LIMIT 20`, [deptoId]),
   ]);
   const cargosPendientes = cargos.rows.filter((item) => item.estado === 'PENDIENTE');
   const multasPendientes = multas.rows.filter((item) => item.estatus === 'PENDIENTE');
-  const totalCargos = cargosPendientes.reduce((sum, item) => sum + Number(item.monto), 0);
+  const totalCargos = cargosPendientes.reduce((sum, item) => sum + Number(item.saldo_pendiente), 0);
   const totalMultas = multasPendientes.reduce((sum, item) => sum + Number(item.monto), 0);
   const pagosRevision = pagos.rows
     .filter((item) => item.estatus === 'PENDIENTE_REVISION')
     .reduce((sum, item) => sum + Number(item.monto), 0);
+  const saldoFavor = Number(pagos.rows[0]?.saldo_favor_total || 0);
   return {
     departamento: depto.rows[0],
     total_cargos: totalCargos,
     total_multas: totalMultas,
     pagos_revision: pagosRevision,
+    saldo_favor: saldoFavor,
     saldo_total: totalCargos + totalMultas,
     cargos: cargos.rows,
     multas: multas.rows,
@@ -62,6 +71,8 @@ export async function generateMonthlyCharges(condominioId: string, periodo?: str
         )
       RETURNING id;
     `, [condominioId, target]);
+
+    await applyAvailableCreditForCondominium(client,condominioId);
 
     const summary = await client.query(`
       SELECT c.monto_cuota,
@@ -120,8 +131,11 @@ export async function buildGeneralState(condominioId: string, periodo?: string, 
         (SELECT COALESCE(SUM(p.monto), 0) FROM pagos p JOIN departamentos d ON d.id=p.depto_id WHERE d.condominio_id=$1 AND p.estatus='APROBADO')
         - (SELECT COALESCE(SUM(g.monto), 0) FROM gastos g WHERE g.condominio_id=$1) total
     ), deuda AS (
-      SELECT COALESCE(SUM(c.monto), 0) + COALESCE((SELECT SUM(m.monto) FROM multas m JOIN departamentos dm ON dm.id=m.depto_id WHERE dm.condominio_id=$1 AND m.estatus='PENDIENTE'), 0) total
-      FROM cargos c JOIN departamentos d ON d.id=c.depto_id WHERE d.condominio_id=$1 AND c.estado='PENDIENTE'
+      SELECT COALESCE(SUM(GREATEST(c.monto-COALESCE(ap.aplicado,0),0)),0)
+        + COALESCE((SELECT SUM(m.monto) FROM multas m JOIN departamentos dm ON dm.id=m.depto_id WHERE dm.condominio_id=$1 AND m.estatus='PENDIENTE'),0) total
+      FROM cargos c JOIN departamentos d ON d.id=c.depto_id
+      LEFT JOIN (SELECT cargo_id,SUM(monto) aplicado FROM aplicaciones_pago GROUP BY cargo_id) ap ON ap.cargo_id=c.id
+      WHERE d.condominio_id=$1 AND c.estado='PENDIENTE'
     ), deptos AS (
       SELECT COUNT(*) total,
         COUNT(*) FILTER (WHERE NOT EXISTS (SELECT 1 FROM cargos c WHERE c.depto_id=d.id AND c.estado='PENDIENTE')) corriente

@@ -101,12 +101,16 @@ export default function ReviewModal({
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-medium">$</span>
                   <input
                     type="number"
+                    min="0.01"
+                    max="10000000"
+                    step="0.01"
                     placeholder="1200.00"
                     value={montoAprobado}
                     onChange={(e) => onMontoChange(e.target.value)}
                     className="w-full border-2 border-slate-200 rounded-xl pl-8 pr-4 py-3 text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-sm font-medium transition-all"
                   />
                 </div>
+                <p className="mt-2 text-xs text-slate-500">Si supera los adeudos, el excedente quedará como saldo a favor. También se admiten pagos parciales.</p>
               </div>
 
               <div>

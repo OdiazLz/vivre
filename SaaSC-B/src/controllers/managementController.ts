@@ -76,6 +76,7 @@ export async function departmentStatementPdfHandler(req: AuthRequest, res: Respo
       `Multas pendientes: $${state.total_multas.toFixed(2)} MXN`,
       `Pagos en revision: $${state.pagos_revision.toFixed(2)} MXN`,
       `Saldo acumulado: $${state.saldo_total.toFixed(2)} MXN`,
+      `Saldo a favor: $${state.saldo_favor.toFixed(2)} MXN`,
     ], filename);
     return res.download(file, filename);
   } catch (error: any) { return res.status(500).json({ error: error.message }); }

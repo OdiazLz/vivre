@@ -135,9 +135,11 @@ export default function App() {
         ? { pago_id: selectedPago.pago_id, estatus, monto_aprobado: parseFloat(montoAprobado) }
         : { pago_id: selectedPago.pago_id, estatus, motivo_rechazo: motivoRechazo };
 
-      await reviewPayment(selectedPago.pago_id, payload);
+      const result = await reviewPayment(selectedPago.pago_id, payload);
 
-      toast.success(`Pago ${estatus.toLowerCase()} con éxito. Residente notificado por WhatsApp.`);
+      toast.success(estatus === 'APROBADO'
+        ? `Pago aprobado. Aplicado: $${Number(result.aplicado).toLocaleString('es-MX',{minimumFractionDigits:2})} · Saldo a favor: $${Number(result.saldo_favor).toLocaleString('es-MX',{minimumFractionDigits:2})}`
+        : 'Pago rechazado. El residente fue notificado por WhatsApp.');
       setSelectedPago(null);
       setMontoAprobado('');
       setMotivoRechazo('');

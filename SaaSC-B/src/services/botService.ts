@@ -221,6 +221,7 @@ private async sendExtendedMenu(phone: string) {
                 const respuesta =
                     `🏠 *Hola, ${user.nombre}*\n📍 Departamento: ${user.numero_depto}\n\n` +
                     `💰 *Tu saldo actual:* $${Number(estado.saldo_total).toFixed(2)} MXN\n\n` +
+                    (Number(estado.saldo_favor) > 0 ? `✅ *Saldo a favor:* $${Number(estado.saldo_favor).toFixed(2)} MXN\n\n` : '') +
                     `📌 *Opciones disponibles:*\n` +
                     `📸 Envía la foto de tu comprobante para registrar pago\n` +
                     `🏗️ Escribe "obras" para ver avances de mantenimiento\n` +
@@ -699,6 +700,7 @@ private async processEditEvent(phone: string, text: string) {
             `🧾 Cuotas pendientes: $${Number(estado.total_cargos).toFixed(2)} MXN\n` +
             `⚠️ Multas pendientes: $${Number(estado.total_multas).toFixed(2)} MXN\n` +
             `💰 *Total acumulado: $${Number(estado.saldo_total).toFixed(2)} MXN*\n` +
+            (Number(estado.saldo_favor) > 0 ? `✅ *Saldo a favor: $${Number(estado.saldo_favor).toFixed(2)} MXN*\n` : '') +
             (Number(estado.pagos_revision) > 0 ? `\n⏳ Comprobantes en revisión: $${Number(estado.pagos_revision).toFixed(2)} MXN` : '');
         await sendMessageWhatssap(phone, resumen);
         if (!sendPdf) return;
@@ -711,9 +713,10 @@ private async processEditEvent(phone: string, text: string) {
             `Cuotas pendientes: $${Number(estado.total_cargos).toFixed(2)} MXN`,
             `Multas pendientes: $${Number(estado.total_multas).toFixed(2)} MXN`,
             `Total acumulado: $${Number(estado.saldo_total).toFixed(2)} MXN`,
+            `Saldo a favor: $${Number(estado.saldo_favor).toFixed(2)} MXN`,
             '',
             ...estado.cargos.filter((cargo) => cargo.estado === 'PENDIENTE').slice(0, 15)
-                .map((cargo) => `${cargo.periodo} - ${cargo.concepto}: $${Number(cargo.monto).toFixed(2)}`),
+                .map((cargo) => `${cargo.periodo} - ${cargo.concepto}: $${Number(cargo.saldo_pendiente).toFixed(2)}`),
         ];
         const filePath = await createStatementPdf(lines, filename);
         const url = `${config.publicBaseUrl.replace(/\/$/, '')}/${filePath}`;

@@ -25,6 +25,9 @@ export class PaymentController {
             if (!['APROBADO', 'RECHAZADO'].includes(estatus)) {
                 return res.status(400).json({ error: 'El estatus debe ser APROBADO o RECHAZADO' });
             }
+            if (estatus === 'APROBADO' && (!Number.isFinite(Number(monto_aprobado)) || Number(monto_aprobado) <= 0 || Number(monto_aprobado) > 10_000_000)) {
+                return res.status(400).json({ error: 'El monto aprobado debe ser un importe positivo válido.' });
+            }
 
             const result = await this.paymentService.reviewPayment(id as string, estatus, monto_aprobado, motivo_rechazo, req.user!.condominio_id);
             return res.status(200).json(result);
@@ -57,13 +60,13 @@ export class PaymentController {
 
     public async createCashPaymentHandler(req: AuthRequest, res: Response) {
         try {
-            const { recibido_por, usuario_id, depto_id, cargo_id, fecha_pago, notas } = req.body || {};
+            const { recibido_por, usuario_id, depto_id, cargo_id, monto, fecha_pago, notas } = req.body || {};
             const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
             const paymentDate = String(fecha_pago || '');
-            if (![recibido_por,usuario_id,depto_id,cargo_id].every((value) => uuid.test(String(value))) || !/^\d{4}-\d{2}-\d{2}$/.test(paymentDate) || Number.isNaN(Date.parse(`${paymentDate}T12:00:00`)) || paymentDate > new Date().toISOString().slice(0,10) || String(notas || '').length > 300) return res.status(400).json({ error: 'Revisa residente, cargo, receptor, fecha y notas.' });
-            const payment = await createCashPayment({ condominioId:req.user!.condominio_id, registradoPor:req.user!.admin_id, recibidoPor:recibido_por, usuarioId:usuario_id, deptoId:depto_id, cargoId:cargo_id, fechaPago:paymentDate, notas:String(notas||'').trim() });
+            if (![recibido_por,usuario_id,depto_id].every((value) => uuid.test(String(value))) || (cargo_id && !uuid.test(String(cargo_id))) || !Number.isFinite(Number(monto)) || Number(monto)<=0 || Number(monto)>10_000_000 || !/^\d{4}-\d{2}-\d{2}$/.test(paymentDate) || Number.isNaN(Date.parse(`${paymentDate}T12:00:00`)) || paymentDate > new Date().toISOString().slice(0,10) || String(notas || '').length > 300) return res.status(400).json({ error: 'Revisa residente, monto, cargo, receptor, fecha y notas.' });
+            const payment = await createCashPayment({ condominioId:req.user!.condominio_id, registradoPor:req.user!.admin_id, recibidoPor:recibido_por, usuarioId:usuario_id, deptoId:depto_id, cargoId:cargo_id||null, monto:Number(monto), fechaPago:paymentDate, notas:String(notas||'').trim() });
             let notificado = false;
-            if (payment.telefono_whatsapp) try { await sendMessageWhatssap(cleanPhoneNumber(payment.telefono_whatsapp), `💵 *Pago en efectivo registrado*\n\nHola *${payment.usuario_nombre}*, se abonaron *$${Number(payment.monto).toLocaleString('es-MX',{minimumFractionDigits:2})} MXN* al departamento *${payment.numero_depto}*.\nConcepto: ${payment.concepto}\nRecibió: ${payment.receptor_nombre}\nFecha: ${payment.fecha_pago}\nFolio: *${String(payment.id).slice(0,8)}*\n\nSi no reconoces este movimiento, comunícate con administración.`); notificado = true; }
+            if (payment.telefono_whatsapp) try { await sendMessageWhatssap(cleanPhoneNumber(payment.telefono_whatsapp), `💵 *Pago en efectivo registrado*\n\nHola *${payment.usuario_nombre}*, se recibieron *$${Number(payment.monto).toLocaleString('es-MX',{minimumFractionDigits:2})} MXN* para el departamento *${payment.numero_depto}*.\nAplicado a adeudos: *$${Number(payment.aplicado).toLocaleString('es-MX',{minimumFractionDigits:2})} MXN*\nSaldo a favor: *$${Number(payment.saldoFavor).toLocaleString('es-MX',{minimumFractionDigits:2})} MXN*\nConcepto inicial: ${payment.concepto}\nRecibió: ${payment.receptor_nombre}\nFecha: ${payment.fecha_pago}\nFolio: *${String(payment.id).slice(0,8)}*\n\nSi no reconoces este movimiento, comunícate con administración.`); notificado = true; }
             catch (error) { console.error('No se pudo notificar el pago en efectivo:', error); }
             return res.status(201).json({ ...payment, notificado });
         } catch (error) {

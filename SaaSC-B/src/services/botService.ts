@@ -9,7 +9,7 @@ import { createMascota } from '../repositories/mascotaRepository.js';
 import { createVisita, getCajonDisponible } from '../repositories/visitaRepository.js';
 import { cancelEventoByUser, createEvento, getUpcomingEventsByUser, updateEventoByUser } from '../repositories/eventoRepository.js';
 import { getCajonesDisponibles, getCajonByCodigo, createReserva, getReservaActivaByUsuario, liberarReserva } from '../repositories/cajonRepository.js';
-import { getAccountStatement, getPublishedGeneralState } from '../repositories/financialRepository.js';
+import { ensureMonthlyChargesDue, getAccountStatement, getPublishedGeneralState } from '../repositories/financialRepository.js';
 import { createStatementPdf } from './pdfService.js';
 import { config } from '../config/index.js';
 import { createRegistrationRequest, getPhoneMemberships, getWhatsAppSession, saveWhatsAppSession, validateInvitationCode } from '../repositories/registrationRepository.js';
@@ -215,6 +215,7 @@ private async sendExtendedMenu(phone: string) {
             }
 
             if (textBody.includes('estado') || textBody.includes('saldo') || textBody.includes('hola')) {
+                await ensureMonthlyChargesDue(user.condominio_id);
                 const estado = await getAccountStatement(user.depto_id);
 
                 const respuesta =
@@ -690,6 +691,7 @@ private async processEditEvent(phone: string, text: string) {
     private async processSaldo(phone: string, sendPdf: boolean) {
         const usuario = await getUserByPhone(phone);
         if (!usuario) return;
+        await ensureMonthlyChargesDue(usuario.condominio_id);
         const estado = await getAccountStatement(usuario.depto_id);
         const resumen =
             `💳 *Estado de cuenta personal*\n\n` +

@@ -10,6 +10,7 @@ interface FinancialState { periodo: string; ingresos: string; gastos: string; fo
 interface Analytics { estacionamiento: { estatus: string; total: number }[]; reincidencias: { articulo: string; incidencias: number; monto: string }[]; reincidentes?: { numero_depto: string; total_multas: number; articulos: string }[] }
 interface Audit { id: string; administrador_email: string; rol: string; accion: string; modulo: string; recurso: string; creado_en: string }
 interface Administrator { id: string; nombre: string; email: string; rol: AdminRole; activo: boolean; ultimo_acceso?: string | null }
+interface ChargeGenerationResult { periodo: string; generados: number; corregidos: number; total_departamentos: number; cargos_periodo: number; monto_cuota: number }
 const ASSIGNABLE_ROLES = ASSIGNABLE_ADMIN_ROLES;
 
 export default function GestionPage({ role }: { role: AdminRole }) {
@@ -52,6 +53,29 @@ export default function GestionPage({ role }: { role: AdminRole }) {
     try { await request(); toast.success(message); await load(); }
     catch { toast.error('No fue posible completar la operación.'); }
     finally { setWorking(''); }
+  };
+
+  const generateCharges = async () => {
+    setWorking('charges');
+    try {
+      const response = await managementApi.generateCharges();
+      const result = response.data as ChargeGenerationResult;
+      await load();
+      if (result.total_departamentos === 0) {
+        toast.error('No hay departamentos registrados en esta privada.');
+      } else if (result.monto_cuota <= 0) {
+        toast.error('La cuota mensual está en $0. Configúrala antes de generar cargos.');
+      } else if (result.generados > 0 || result.corregidos > 0) {
+        toast.success(`${result.generados} cuota(s) creada(s) y ${result.corregidos} corregida(s) para ${result.periodo}.`);
+      } else {
+        toast.success(`Las ${result.cargos_periodo} cuota(s) de ${result.periodo} ya estaban generadas.`);
+      }
+    } catch (error) {
+      const candidate = error as { response?: { data?: { error?: string } } };
+      toast.error(candidate.response?.data?.error || 'No fue posible generar las cuotas.');
+    } finally {
+      setWorking('');
+    }
   };
 
   const exportReport = async (moduleName: string) => {
@@ -120,7 +144,7 @@ export default function GestionPage({ role }: { role: AdminRole }) {
         <h2 className="font-bold text-slate-900">Estado financiero {state?.periodo}</h2>
         <p className="mt-1 text-sm text-slate-500">Al publicar, los residentes podrán consultar únicamente cifras generales por WhatsApp.</p>
         <div className="my-5 grid grid-cols-2 gap-3 text-sm"><div className="rounded-xl bg-slate-50 p-3">Morosidad<br/><b>${Number(state?.morosidad || 0).toLocaleString('es-MX')}</b></div><div className="rounded-xl bg-slate-50 p-3">Al corriente<br/><b>{state?.departamentos_corriente || 0} / {state?.total_departamentos || 0}</b></div></div>
-        {canManageFinances && <><div className="flex flex-wrap gap-2"><button onClick={() => void action('charges', () => managementApi.generateCharges(), 'Cuotas mensuales generadas.')} className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white" disabled={!!working}>{working === 'charges' ? 'Generando…' : 'Generar cuotas del mes'}</button><button onClick={() => void action('publish', () => managementApi.publishFinancialState(), 'Estado general publicado en WhatsApp.')} className="rounded-xl border border-indigo-200 px-4 py-2 text-sm font-semibold text-indigo-700" disabled={!!working}>{working === 'publish' ? 'Publicando…' : 'Publicar estado general'}</button></div>
+        {canManageFinances && <><div className="flex flex-wrap gap-2"><button onClick={() => void generateCharges()} className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white" disabled={!!working}>{working === 'charges' ? 'Generando…' : 'Generar cuotas del mes'}</button><button onClick={() => void action('publish', () => managementApi.publishFinancialState(), 'Estado general publicado en WhatsApp.')} className="rounded-xl border border-indigo-200 px-4 py-2 text-sm font-semibold text-indigo-700" disabled={!!working}>{working === 'publish' ? 'Publicando…' : 'Publicar estado general'}</button></div>
         <form className="mt-5 grid gap-2 border-t border-slate-100 pt-4 sm:grid-cols-4" onSubmit={(event) => { event.preventDefault(); void action('expense', createExpense, 'Gasto registrado.'); }}>
           <select value={expense.categoria} onChange={(e) => setExpense({ ...expense, categoria: e.target.value })} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"><option>MANTENIMIENTO</option><option>SEGURIDAD</option><option>SERVICIOS</option><option>LIMPIEZA</option><option>OTRO</option></select>
           <input value={expense.concepto} onChange={(e) => setExpense({ ...expense, concepto: e.target.value })} placeholder="Concepto del gasto" className="rounded-xl border border-slate-200 px-3 py-2 text-sm sm:col-span-2" required />

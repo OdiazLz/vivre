@@ -4,7 +4,7 @@ import { cleanPhoneNumber } from '../utils/phone.js';
 import { generateMonthlyCharges } from '../repositories/financialRepository.js';
 import { getAllActiveUsers } from '../repositories/userRepository.js';
 import { createDatabaseBackup } from './backupService.js';
-import { disableResidentGateAccess, listActiveCondominiumIds, listOverdueResidents } from '../repositories/scheduledJobRepository.js';
+import { disableResidentGateAccess, listActiveCondominiumsDueForBilling, listOverdueResidents } from '../repositories/scheduledJobRepository.js';
 import { getCurrentRule } from '../repositories/regulationRepository.js';
 
 export class CronService {
@@ -12,6 +12,10 @@ export class CronService {
     private executedJobs = new Set<string>();
 
     start() {
+        // Render y otros hosts pueden suspender el proceso. Esta recuperación
+        // idempotente evita perder la cuota por no estar activo en el minuto exacto.
+        void this.generateMonthlyFees().catch((error) => console.error('Error recuperando cuotas mensuales:', error));
+
         // Ejecutar cada minuto para verificar si son las 11:30 PM
         this.intervalId = setInterval(async () => {
             const now = new Date();
@@ -29,8 +33,8 @@ export class CronService {
                 await this.checkOverduePayments();
             }
 
-            if (now.getDate() === 1 && hours === 8 && minutes === 0 && this.once(`cuotas-${dateKey}`)) {
-                await this.generateMonthlyFees();
+            if (hours === 8 && minutes === 0 && this.once(`cuotas-${dateKey}`)) {
+                await this.generateMonthlyFees().catch((error) => console.error('Error generando cuotas mensuales:', error));
             }
 
             if (hours === 2 && minutes === 0 && this.once(`respaldo-${dateKey}`)) {
@@ -47,7 +51,7 @@ export class CronService {
     }
 
     private async generateMonthlyFees() {
-        const condominios = await listActiveCondominiumIds();
+        const condominios = await listActiveCondominiumsDueForBilling();
         for (const condominioId of condominios) {
             const result = await generateMonthlyCharges(condominioId);
             if (!result.generados) continue;

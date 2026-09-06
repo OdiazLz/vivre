@@ -28,20 +28,82 @@ export async function getAccountStatement(deptoId: string) {
 
 export async function generateMonthlyCharges(condominioId: string, periodo?: string) {
   const target = periodo || new Date().toISOString().slice(0, 7);
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // Durante la configuracion inicial pudo haberse emitido una cuota en $0.
+    // Sólo se corrigen cargos pendientes en cero; nunca se altera un cargo pagado
+    // ni uno que ya tenga un importe contable válido.
+    const repaired = await client.query(`
+      UPDATE cargos cargo
+      SET monto = condominio.monto_cuota
+      FROM departamentos departamento
+      JOIN condominios condominio ON condominio.id = departamento.condominio_id
+      WHERE cargo.depto_id = departamento.id
+        AND departamento.condominio_id = $1
+        AND cargo.periodo = $2
+        AND cargo.estado = 'PENDIENTE'
+        AND COALESCE(cargo.concepto, 'Cuota de mantenimiento') = 'Cuota de mantenimiento'
+        AND cargo.monto = 0
+        AND condominio.monto_cuota > 0
+    `, [condominioId, target]);
+
+    const inserted = await client.query(`
+      INSERT INTO cargos (depto_id, periodo, monto, estado, concepto)
+      SELECT d.id, $2, c.monto_cuota, 'PENDIENTE', 'Cuota de mantenimiento'
+      FROM departamentos d
+      JOIN condominios c ON c.id = d.condominio_id
+      WHERE d.condominio_id = $1
+        AND NOT EXISTS (
+          SELECT 1 FROM cargos existente
+          WHERE existente.depto_id=d.id AND existente.periodo=$2
+            AND COALESCE(existente.concepto, 'Cuota de mantenimiento')='Cuota de mantenimiento'
+        )
+      RETURNING id;
+    `, [condominioId, target]);
+
+    const summary = await client.query(`
+      SELECT c.monto_cuota,
+        COUNT(DISTINCT d.id)::int AS total_departamentos,
+        COUNT(DISTINCT cargo.id)::int AS cargos_periodo
+      FROM condominios c
+      LEFT JOIN departamentos d ON d.condominio_id = c.id
+      LEFT JOIN cargos cargo ON cargo.depto_id = d.id
+        AND cargo.periodo = $2
+        AND COALESCE(cargo.concepto, 'Cuota de mantenimiento') = 'Cuota de mantenimiento'
+      WHERE c.id = $1
+      GROUP BY c.id
+    `, [condominioId, target]);
+
+    await client.query('COMMIT');
+    return {
+      periodo: target,
+      generados: inserted.rowCount || 0,
+      corregidos: repaired.rowCount || 0,
+      total_departamentos: Number(summary.rows[0]?.total_departamentos || 0),
+      cargos_periodo: Number(summary.rows[0]?.cargos_periodo || 0),
+      monto_cuota: Number(summary.rows[0]?.monto_cuota || 0),
+    };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function ensureMonthlyChargesDue(condominioId: string) {
   const result = await pool.query(`
-    INSERT INTO cargos (depto_id, periodo, monto, estado, concepto)
-    SELECT d.id, $2, c.monto_cuota, 'PENDIENTE', 'Cuota de mantenimiento'
-    FROM departamentos d
-    JOIN condominios c ON c.id = d.condominio_id
-    WHERE d.condominio_id = $1
-      AND NOT EXISTS (
-        SELECT 1 FROM cargos existente
-        WHERE existente.depto_id=d.id AND existente.periodo=$2
-          AND COALESCE(existente.concepto, 'Cuota de mantenimiento')='Cuota de mantenimiento'
-      )
-    RETURNING *;
-  `, [condominioId, target]);
-  return { periodo: target, generados: result.rowCount || 0 };
+    SELECT dia_corte, EXTRACT(DAY FROM CURRENT_DATE)::int AS dia_actual
+    FROM condominios
+    WHERE id = $1 AND estatus = 'ACTIVO'
+  `, [condominioId]);
+  const condominium = result.rows[0];
+  if (!condominium || Number(condominium.dia_actual) < Number(condominium.dia_corte)) {
+    return null;
+  }
+  return generateMonthlyCharges(condominioId);
 }
 
 export async function buildGeneralState(condominioId: string, periodo?: string, publish = false) {

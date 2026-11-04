@@ -12,4 +12,3 @@ env.txt
 .vscode/
 .idea/
 .DS_Store
-.env.example

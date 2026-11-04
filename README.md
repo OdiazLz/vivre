@@ -6,11 +6,11 @@ Vivre es una plataforma SaaS multi-condominio para administrar cuotas, pagos, re
 
 > La demo está en el plan gratuito de Render. La primera carga puede tardar entre 30 y 60 segundos mientras el servidor despierta.
 
-<img width="2055" height="1264" alt="Pantalla login" src="https://github.com/user-attachments/assets/f014cf34-064b-4765-ad96-a2af7985f512" />
+<img width="2055" height="1264" alt="Pantalla de inicio de sesión de Vivre" src="https://github.com/user-attachments/assets/f014cf34-064b-4765-ad96-a2af7985f512" />
 
-<img width="2070" height="1252" alt="Pantalla Dashboard" src="https://github.com/user-attachments/assets/58b6bc52-f561-4691-adb4-4778420f5a9b" />
+<img alt="Dashboard con recaudación mensual y comprobantes" src="https://github.com/user-attachments/assets/58b6bc52-f561-4691-adb4-4778420f5a9b" />
 
-<img width="1763" height="1251" alt="Pantalla configuracion" src="https://github.com/user-attachments/assets/f8988abb-b11b-420a-afe6-7be13eb82150" />
+<img alt="Configuración de cuotas, datos de pago y reglamento" src="https://github.com/user-attachments/assets/f8988abb-b11b-420a-afe6-7be13eb82150" />
 
 ## Funcionalidades
 

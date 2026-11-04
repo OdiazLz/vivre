@@ -4,6 +4,13 @@ Vivre es una plataforma SaaS multi-condominio para administrar cuotas, pagos, re
 
 🔗 **Demo:** https://vivre-web-htn4.onrender.com/
 
+🔗 **Demo:** https://vivre-web-htn4.onrender.com/
+
+| Usuario de prueba | |
+| --- | --- |
+| Correo | `Test@gmail.com` |
+| Contraseña | `Test@123456789` |
+
 > La demo está en el plan gratuito de Render. La primera carga puede tardar entre 30 y 60 segundos mientras el servidor despierta.
 
 <img width="2055" height="1264" alt="Pantalla de inicio de sesión de Vivre" src="https://github.com/user-attachments/assets/f014cf34-064b-4765-ad96-a2af7985f512" />

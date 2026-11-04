@@ -5,7 +5,7 @@
 **/backups/
 
 saasc_backup.sql
-env.txt
+.env
 *.backup
 *.dump
 

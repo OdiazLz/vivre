@@ -475,7 +475,15 @@ export default function App() {
                     Panel Principal
                   </h1>
                   <p className="text-sm text-muted-foreground mt-0.5">
-                    Miércoles, 12 de junio de 2026
+                    {(() => {
+                      const fecha = new Date().toLocaleDateString('es-MX', {
+                        weekday: 'long',
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric',
+                      });
+                      return fecha.charAt(0).toUpperCase() + fecha.slice(1);
+                    })()}
                   </p>
                 </div>
                 <div

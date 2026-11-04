@@ -4,8 +4,6 @@ Vivre es una plataforma SaaS multi-condominio para administrar cuotas, pagos, re
 
 🔗 **Demo:** https://vivre-web-htn4.onrender.com/
 
-🔗 **Demo:** https://vivre-web-htn4.onrender.com/
-
 | Usuario de prueba | |
 | --- | --- |
 | Correo | `Test@gmail.com` |
